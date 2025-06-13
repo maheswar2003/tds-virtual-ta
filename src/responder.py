@@ -22,23 +22,33 @@ class VirtualTAResponder:
         """Load course content and discourse posts."""
         self.course_content = []
         self.discourse_posts = []
+
+        # --- FIX: Use absolute paths to find data files ---
+        # This makes the file loading robust, regardless of where the app is run from.
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        course_content_path = os.path.join(project_root, 'data', 'course_content.json')
+        discourse_posts_path = os.path.join(project_root, 'data', 'discourse_posts.json')
         
         try:
-            if os.path.exists("data/course_content.json"):
-                with open("data/course_content.json", "r", encoding="utf-8") as f:
+            if os.path.exists(course_content_path):
+                with open(course_content_path, "r", encoding="utf-8") as f:
                     self.course_content = json.load(f)
-                print(f"✅ Responder loaded {len(self.course_content)} course items.")
+                logger.info(f"✅ Responder loaded {len(self.course_content)} course items from {course_content_path}")
+            else:
+                logger.warning(f"⚠️ Responder could not find course content at {course_content_path}")
             
-            if os.path.exists("data/discourse_posts.json"):
-                with open("data/discourse_posts.json", "r", encoding="utf-8") as f:
+            if os.path.exists(discourse_posts_path):
+                with open(discourse_posts_path, "r", encoding="utf-8") as f:
                     self.discourse_posts = json.load(f)
-                print(f"✅ Responder loaded {len(self.discourse_posts)} discourse posts.")
+                logger.info(f"✅ Responder loaded {len(self.discourse_posts)} discourse posts from {discourse_posts_path}")
+            else:
+                logger.warning(f"⚠️ Responder could not find discourse posts at {discourse_posts_path}")
                 
         except Exception as e:
-            print(f"⚠️ Responder Error: Could not load data files: {e}")
+            logger.error(f"⚠️ Responder Error: Could not load data files: {e}")
             
         if not self.course_content and not self.discourse_posts:
-            print("⚠️ No data found. Responder will use fallback answers.")
+            logger.warning("⚠️ No data loaded. Responder will use fallback answers.")
 
     def find_relevant_content(self, question: str) -> List[Dict]:
         """Finds the most relevant content using a simple but effective keyword search."""
@@ -84,30 +94,55 @@ class VirtualTAResponder:
         original_question = question_data['original_question']
         relevant_items = self.find_relevant_content(original_question)
         
-        # If we have a highly relevant item, use it to form the answer
+        # --- FIX: Use direct content for answer and format links correctly ---
         if relevant_items and relevant_items[0]["score"] > 5: # High confidence threshold
             best_item = relevant_items[0]["item"]
-            answer = f"Based on the course materials, here is information regarding your question: \"{best_item['content']}\" This was found in a document titled \"{best_item['title']}\"."
+            
+            # The answer should be the direct content from the best matching item
+            answer = best_item.get('content', 'Could not extract answer text.')
+            
+            # The first link must be from the best item
+            links = []
+            if best_item.get('url'):
+                links.append({
+                    "text": best_item.get('title', 'Source'), 
+                    "url": best_item.get('url')
+                })
+
+            # Add other unique, relevant links
+            seen_urls = {best_item.get('url')}
+            for res in relevant_items[1:]:
+                if len(links) >= 3:
+                    break
+                item = res['item']
+                url = item.get('url')
+                if url and url not in seen_urls:
+                    links.append({
+                        "text": item.get('title', 'Relevant Link'),
+                        "url": url
+                    })
+                    seen_urls.add(url)
+
         else:
             # Fallback for generic or unclear questions
             answer = "I couldn't find a specific answer in the course materials. For assignment questions, please double-check the instructions and the course portal. For general queries, try rephrasing your question with more specific keywords."
-
-        # Extract up to 3 relevant links
-        links = []
-        seen_urls = set()
-        for res in relevant_items:
-            item = res['item']
-            url = item.get('url')
-            if url and url not in seen_urls:
-                links.append({
-                    "text": item.get('title', 'Relevant Link'),
-                    "url": url
-                })
-                seen_urls.add(url)
-            if len(links) >= 3:
-                break
+            
+            # Provide some default links if available, even for fallback
+            links = []
+            seen_urls = set()
+            for res in relevant_items:
+                if len(links) >= 2: # Limit to 2 for fallback
+                    break
+                item = res['item']
+                url = item.get('url')
+                if url and url not in seen_urls:
+                    links.append({
+                        "text": item.get('title', 'Relevant Link'),
+                        "url": url
+                    })
+                    seen_urls.add(url)
         
         return {
             "answer": answer,
             "links": links
-        } 
+        }
