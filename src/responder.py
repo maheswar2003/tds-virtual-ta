@@ -138,8 +138,9 @@ class VirtualTAResponder:
             if common_words:
                 score = len(common_words)
 
-                # Big boost for important keywords
-                if 'ga5' in common_words or 'gpt-3.5-turbo-0125' in common_words:
+                # --- FIX: Broader keywords and stronger boosting ---
+                boost_words = {'ga5', 'gpt-3.5-turbo-0125', 'gpt3.5', 'gpt-4o-mini'}
+                if not boost_words.isdisjoint(common_words):
                     score += 10 
             
             if score > 0:
@@ -156,8 +157,8 @@ class VirtualTAResponder:
         original_question = question_data['original_question']
         relevant_items = self.find_relevant_content(original_question)
         
-        # --- FIX: Use direct content for answer and format links correctly ---
-        if relevant_items and relevant_items[0]["score"] > 5: # High confidence threshold
+        # --- FIX: Lower confidence threshold to ensure a match is found ---
+        if relevant_items and relevant_items[0]["score"] > 0: # Lowered threshold
             best_item = relevant_items[0]["item"]
             
             # The answer should be the direct content from the best matching item
