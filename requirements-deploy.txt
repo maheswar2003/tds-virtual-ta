@@ -1,0 +1,26 @@
+# Minimal requirements for deployment
+# Core Flask app dependencies
+Flask==3.0.0
+Flask-CORS==4.0.0
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+openai==1.12.0
+python-dotenv==1.0.0
+gunicorn==21.2.0
+
+# Basic data processing (lightweight versions)
+numpy==1.26.3
+pandas==2.2.0
+
+# Optional: Only include if needed and small enough
+# scikit-learn==1.4.0
+# nltk==3.8.1
+
+# NOTE: Heavy ML dependencies removed for deployment:
+# - torch (very large)
+# - transformers (very large) 
+# - sentence-transformers (depends on torch)
+# - chromadb (large dependencies)
+# - Pillow (can be large)
+# - selenium (not needed in production) 

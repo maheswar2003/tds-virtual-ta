@@ -1,3 +1,4 @@
+# Core Flask app dependencies (lightweight for deployment)
 Flask==3.0.0
 Flask-CORS==4.0.0
 requests==2.31.0
@@ -5,15 +6,21 @@ beautifulsoup4==4.12.2
 lxml==4.9.3
 openai==1.12.0
 python-dotenv==1.0.0
-scikit-learn==1.4.0
+gunicorn==21.2.0
+
+# Basic data processing
 numpy==1.26.3
 pandas==2.2.0
-nltk==3.8.1
-selenium==4.16.0
-webdriver-manager==4.0.1
-Pillow==10.2.0
-gunicorn==21.2.0
-transformers==4.36.2
-torch==2.1.2
-sentence-transformers==2.2.2
-chromadb==0.4.22 
+
+# Optional advanced features (comment out for lightweight deployment)
+# scikit-learn==1.4.0
+# nltk==3.8.1
+# Pillow==10.2.0
+
+# Heavy ML dependencies (for local development only - use requirements-full.txt)
+# transformers==4.36.2
+# torch==2.1.2
+# sentence-transformers==2.2.2
+# chromadb==0.4.22
+# selenium==4.16.0
+# webdriver-manager==4.0.1 

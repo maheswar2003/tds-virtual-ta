@@ -51,8 +51,15 @@ cd tds-virtual-ta
 ```
 
 2. **Install packages:**
+
+For basic functionality (recommended for deployment):
 ```bash
 pip install -r requirements.txt
+```
+
+For full features including image processing and semantic search:
+```bash
+pip install -r requirements-full.txt
 ```
 
 3. **Set up environment:**
@@ -104,7 +111,17 @@ I deployed mine on Railway - it's free and easy:
 3. Add environment variable: `OPENAI_API_KEY=your_key`
 4. Deploy automatically
 
-You can also use Render, Heroku, or any other platform that supports Python.
+**Important for deployment:** The default `requirements.txt` uses lightweight dependencies to avoid size limits. The app will work with basic functionality and fallback to rule-based responses.
+
+### Alternative platforms:
+- **Render** (free tier available)
+- **Heroku** (with lightweight buildpack)
+- **Railway** (recommended for students)
+
+### Deployment tips:
+- Use the default `requirements.txt` (lightweight)
+- Set `OPENAI_API_KEY` environment variable
+- The app gracefully handles missing optional dependencies
 
 ## Features
 

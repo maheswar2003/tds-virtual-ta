@@ -1,0 +1,17 @@
+[build]
+# Use Python 3.11 for compatibility
+nixpacks.version = "1.x"
+
+[deploy]
+# Start command for the Flask app
+startCommand = "gunicorn --bind 0.0.0.0:$PORT app:app"
+healthcheckPath = "/health"
+restartPolicyType = "always"
+
+[environment]
+# Production environment
+FLASK_ENV = "production"
+FLASK_SKIP_DOTENV = "1"
+PYTHONUNBUFFERED = "1"
+
+# Note: Set OPENAI_API_KEY in Railway dashboard environment variables 
