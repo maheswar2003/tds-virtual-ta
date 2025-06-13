@@ -8,23 +8,23 @@
   },
   {
     "title": "Token Calculation and Pricing",
-    "content": "When calculating token costs for AI models, use the official tokenization method. For gpt-3.5-turbo-0125, the cost is typically 50 cents per million input tokens. Use proper tokenization libraries to count tokens accurately before submitting cost calculations.",
+    "content": "When calculating token costs for AI models, use the official tokenization method. For gpt-3.5-turbo-0125, the cost is typically 50 cents per million input tokens. Use proper tokenization libraries like tiktoken to count tokens accurately before submitting cost calculations.",
     "url": "https://tds.s-anand.net/#/2025-01/token-pricing",
-    "keywords": ["token", "pricing", "cost", "calculation", "gpt"],
+    "keywords": ["token", "pricing", "cost", "calculation", "gpt", "tiktoken"],
     "scraped_at": "2025-01-15T10:05:00Z"
   },
   {
     "title": "Python Environment Setup",
-    "content": "Ensure you have the correct Python environment setup for TDS assignments. Install required packages using pip and requirements.txt files. Common packages include pandas, numpy, matplotlib, seaborn, and openai for API interactions.",
+    "content": "Ensure you have the correct Python environment setup for TDS assignments. Install required packages using pip and requirements.txt files. For OpenAI integration, use: pip install openai. Common packages include pandas, numpy, matplotlib, seaborn, and openai for API interactions.",
     "url": "https://tds.s-anand.net/#/2025-01/python-setup",
-    "keywords": ["python", "setup", "environment", "packages", "installation"],
+    "keywords": ["python", "setup", "environment", "packages", "installation", "pip", "openai"],
     "scraped_at": "2025-01-15T10:10:00Z"
   },
   {
     "title": "Data Visualization Guidelines",
-    "content": "Create clear and informative visualizations for your data science projects. Use appropriate chart types, proper labeling, and follow the color scheme guidelines provided in the course materials. Always include proper titles, axis labels, and legends.",
+    "content": "Create clear and informative visualizations for your data science projects. Use appropriate chart types, proper labeling, and follow the color scheme guidelines provided in the course materials. Recommended libraries include matplotlib, seaborn, and plotly. Always include proper titles, axis labels, and legends.",
     "url": "https://tds.s-anand.net/#/2025-01/visualization",
-    "keywords": ["visualization", "charts", "matplotlib", "seaborn", "data"],
+    "keywords": ["visualization", "charts", "matplotlib", "seaborn", "plotly", "data"],
     "scraped_at": "2025-01-15T10:15:00Z"
   },
   {
@@ -33,5 +33,12 @@
     "url": "https://tds.s-anand.net/#/2025-01/submission",
     "keywords": ["assignment", "submission", "deadline", "portal", "documentation"],
     "scraped_at": "2025-01-15T10:20:00Z"
+  },
+  {
+    "title": "Docker and Containerization",
+    "content": "We recommend using Podman for containerization in this course, though Docker is also acceptable. Podman offers security advantages and is rootless by default. Both tools help create reproducible environments for data science projects. Learn the basics of container management for deployment.",
+    "url": "https://tds.s-anand.net/#/docker",
+    "keywords": ["docker", "podman", "container", "deployment", "security"],
+    "scraped_at": "2025-01-15T10:25:00Z"
   }
 ] 
