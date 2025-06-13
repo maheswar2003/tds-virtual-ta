@@ -1,119 +1,97 @@
 #!/usr/bin/env python3
 """
-TDS Virtual TA - Main Flask Application
-Provides an API endpoint to answer student questions based on course content and Discourse posts.
+TDS Virtual TA - Flask app for answering student questions
+Made for IIT Madras TDS course assignment
 """
 
 import os
 import json
-import base64
 import logging
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import openai
-from src.responder import VirtualTAResponder
-from src.processor import QuestionProcessor
 
-# Configure logging
+# Set up basic logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Allow cross-origin requests
+
+# Import our modules
+try:
+    from src.responder import VirtualTAResponder
+    from src.processor import QuestionProcessor
+except ImportError as e:
+    logger.error(f"Failed to import modules: {e}")
+    raise
 
 # Initialize components
-question_processor = QuestionProcessor()
+processor = QuestionProcessor()
 responder = VirtualTAResponder()
 
 @app.route('/api/', methods=['POST'])
-def handle_question():
-    """
-    Handle student questions and return AI-generated responses with relevant links.
-    
-    Expected JSON payload:
-    {
-        "question": "Student question",
-        "image": "base64_encoded_image (optional)"
-    }
-    
-    Returns:
-    {
-        "answer": "Generated answer",
-        "links": [
-            {
-                "url": "relevant_url",
-                "text": "link_description"
-            }
-        ]
-    }
-    """
+def ask_question():
+    """Main endpoint for student questions"""
     try:
-        # Validate request
+        # Check if request has JSON data
         if not request.is_json:
-            return jsonify({"error": "Request must be JSON"}), 400
+            return jsonify({"error": "Please send JSON data"}), 400
         
         data = request.get_json()
         
+        # Make sure we have a question
         if not data or 'question' not in data:
-            return jsonify({"error": "Question is required"}), 400
+            return jsonify({"error": "Missing 'question' field"}), 400
         
         question = data['question']
-        image_data = data.get('image')
+        image = data.get('image')  # Optional image data
         
-        logger.info(f"Received question: {question[:100]}...")
+        logger.info(f"Got question: {question[:50]}...")
         
         # Process the question
-        processed_question = question_processor.process_question(question, image_data)
+        processed = processor.process_question(question, image)
         
-        # Generate response
-        response = responder.generate_response(processed_question)
+        # Get response from our TA system
+        response = responder.generate_response(processed)
         
-        logger.info(f"Generated response with {len(response.get('links', []))} links")
+        logger.info(f"Sent response with {len(response.get('links', []))} links")
         
         return jsonify(response)
         
     except Exception as e:
-        logger.error(f"Error processing question: {str(e)}")
+        logger.error(f"Error: {str(e)}")
         return jsonify({
-            "error": "Internal server error",
-            "message": "Failed to process question"
+            "error": "Something went wrong",
+            "message": str(e)
         }), 500
 
 @app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
+def health():
+    """Simple health check"""
     return jsonify({
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "version": "1.0.0"
+        "status": "ok",
+        "time": datetime.now().isoformat()
     })
 
 @app.route('/', methods=['GET'])
-def index():
-    """Root endpoint with API information"""
+def home():
+    """Info page"""
     return jsonify({
         "name": "TDS Virtual TA",
-        "description": "Virtual Teaching Assistant for IIT Madras Tools in Data Science course",
-        "endpoints": {
-            "POST /api/": "Submit questions for AI responses",
-            "GET /health": "Health check",
-            "GET /": "This information"
-        },
-        "usage": {
-            "method": "POST",
-            "url": "/api/",
-            "content_type": "application/json",
-            "body": {
-                "question": "Your question here",
-                "image": "base64_encoded_image (optional)"
-            }
+        "description": "Virtual TA for IIT Madras TDS course",
+        "usage": "POST /api/ with JSON: {\"question\": \"your question\"}",
+        "example": {
+            "question": "Should I use gpt-4o-mini or gpt-3.5-turbo?",
+            "image": "base64_image_data (optional)"
         }
     })
 
 if __name__ == '__main__':
+    # Get port from environment (for deployment)
     port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_ENV') == 'development'
+    debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     
-    logger.info(f"Starting TDS Virtual TA on port {port}")
+    logger.info(f"Starting app on port {port}")
     app.run(host='0.0.0.0', port=port, debug=debug) 

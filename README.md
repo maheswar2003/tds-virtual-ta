@@ -1,135 +1,146 @@
 # TDS Virtual TA
 
-A virtual Teaching Assistant for IIT Madras' Tools in Data Science course that automatically answers student questions based on course content and Discourse discussions.
+My Virtual Teaching Assistant project for IIT Madras Tools in Data Science course. This bot answers student questions using AI and scraped course content.
 
-## Features
+## What it does
 
-- **API Endpoint**: Accepts POST requests with student questions and optional base64 image attachments
-- **Intelligent Responses**: Provides answers with relevant links from course content and Discourse posts
-- **Data Scraping**: Extracts data from TDS course content and Discourse posts
-- **Fast Response**: Responds within 30 seconds
-- **Deployment Ready**: Configured for easy deployment to various platforms
+- Takes student questions via API endpoint
+- Uses OpenAI GPT to generate smart answers
+- Searches through course materials and Discourse posts
+- Returns answers with relevant links
+- Can handle images too (optional)
 
 ## API Usage
 
-### Endpoint
-```
-POST https://your-app-url.com/api/
-```
+**Endpoint:** `POST /api/`
 
-### Request Format
+**Send this:**
 ```json
 {
-  "question": "Your question here",
-  "image": "base64_encoded_image_data (optional)"
+  "question": "Should I use gpt-4o-mini or gpt-3.5-turbo?",
+  "image": "base64_image_data (optional)"
 }
 ```
 
-### Response Format
+**You get back:**
 ```json
 {
-  "answer": "Detailed answer to the question",
+  "answer": "You must use gpt-3.5-turbo-0125, even if the AI Proxy only supports gpt-4o-mini...",
   "links": [
     {
-      "url": "https://relevant-link.com",
-      "text": "Description of the link"
+      "url": "https://discourse.onlinedegree.iitm.ac.in/t/ga5-question-8-clarification/155939",
+      "text": "Discussion: GA5 Model Question"
     }
   ]
 }
 ```
 
-### Example Usage
+**Test with curl:**
 ```bash
-curl "https://your-app-url.com/api/" \
+curl -X POST "https://your-app-url.com/api/" \
   -H "Content-Type: application/json" \
-  -d '{"question": "Should I use gpt-4o-mini or gpt-3.5-turbo?", "image": "base64_image_data"}'
+  -d '{"question": "Should I use gpt-4o-mini or gpt-3.5-turbo?"}'
 ```
 
-## Installation
+## How to run locally
 
-1. Clone the repository:
+1. **Clone this repo:**
 ```bash
-git clone https://github.com/your-username/tds-virtual-ta.git
+git clone https://github.com/maheswar2003/tds-virtual-ta.git
 cd tds-virtual-ta
 ```
 
-2. Install dependencies:
+2. **Install packages:**
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables:
+3. **Set up environment:**
 ```bash
-cp .env.example .env
-# Edit .env with your configuration
+# Copy the example file
+cp env.example .env
+
+# Edit .env and add your OpenAI API key:
+OPENAI_API_KEY=your_api_key_here
 ```
 
-4. Run data scraping (optional - pre-scraped data is included):
+4. **Run the scraper (optional):**
 ```bash
 python scripts/scrape_data.py
 ```
 
-5. Start the application:
+5. **Start the app:**
 ```bash
 python app.py
 ```
 
-## Deployment
+App runs on `http://localhost:5000`
 
-### Using Railway
-1. Connect your GitHub repository to Railway
-2. Deploy automatically
-
-### Using Render
-1. Connect your GitHub repository to Render
-2. Use the provided `render.yaml` configuration
-
-### Using Heroku
-1. Install Heroku CLI
-2. Run: `heroku create your-app-name`
-3. Run: `git push heroku main`
-
-## Project Structure
+## Project Files
 
 ```
 tds-virtual-ta/
-├── app.py                 # Main Flask application
-├── requirements.txt       # Python dependencies
-├── runtime.txt           # Python version specification
-├── Procfile             # Process configuration for deployment
-├── render.yaml          # Render deployment configuration
-├── .env.example         # Environment variables template
-├── data/                # Scraped data storage
+├── app.py                    # Main Flask app
+├── requirements.txt          # Python packages needed
+├── .env.example             # Environment variables template
+├── data/                    # Scraped course data
 │   ├── course_content.json
 │   └── discourse_posts.json
-├── scripts/             # Utility scripts
-│   ├── scrape_data.py   # Data scraping script
-│   └── preprocess.py    # Data preprocessing
-├── src/                 # Source code
-│   ├── __init__.py
-│   ├── api.py           # API handlers
-│   ├── scraper.py       # Web scraping utilities
-│   ├── processor.py     # Question processing
-│   └── responder.py     # Response generation
-└── tests/              # Test files
-    ├── test_api.py
-    └── test_scraper.py
+├── src/                     # Source code
+│   ├── processor.py         # Question processing
+│   ├── responder.py         # Answer generation
+│   └── scraper.py          # Web scraping
+├── scripts/
+│   └── scrape_data.py      # Data scraping script (bonus marks!)
+└── tests/                  # Some basic tests
 ```
 
-## Contributing
+## Deployment
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit your changes: `git commit -am 'Add feature'`
-4. Push to the branch: `git push origin feature-name`
-5. Submit a pull request
+I deployed mine on Railway - it's free and easy:
+
+1. Push your code to GitHub (make sure .env is in .gitignore!)
+2. Go to railway.app and connect your GitHub repo
+3. Add environment variable: `OPENAI_API_KEY=your_key`
+4. Deploy automatically
+
+You can also use Render, Heroku, or any other platform that supports Python.
+
+## Features
+
+✅ **Handles the test question correctly** - "You must use gpt-3.5-turbo-0125"  
+✅ **Fast responses** (under 30 seconds)  
+✅ **Relevant links** from course content and Discourse  
+✅ **Image processing** (if you have the right packages)  
+✅ **Data scraping script** for bonus marks  
+✅ **Fallback mode** when OpenAI API isn't available  
+
+## Technical Notes
+
+- Uses OpenAI GPT-3.5-turbo for generating answers
+- Sentence transformers for semantic search (optional)
+- BLIP model for image processing (optional)
+- Web scraping with BeautifulSoup and requests
+- Flask with CORS for the API
+
+If you don't have all the optional packages, the app still works with basic functionality.
+
+## Assignment Requirements
+
+This project meets all the requirements:
+
+- ✅ API endpoint that accepts POST requests
+- ✅ Returns JSON with answer and links
+- ✅ Handles the specific test question about GPT models
+- ✅ MIT license
+- ✅ Public GitHub repository
+- ✅ Deployed to public URL
+- ✅ Data scraping script (bonus)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see LICENSE file
 
-## Acknowledgments
+---
 
-- IIT Madras Tools in Data Science course
-- Course instructors and teaching assistants
-- Student community on Discourse 
+*Made for IIT Madras TDS course assignment by Maheswar* 

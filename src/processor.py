@@ -1,188 +1,183 @@
 #!/usr/bin/env python3
 """
-Question processor for handling text and image inputs
+Question processor - handles text and image inputs
 """
 
 import base64
 import logging
 import re
-from typing import Dict, Optional, List
+from typing import Dict, List
 import io
 
-# Try to import optional dependencies
+# Try to import image processing stuff
 try:
     from PIL import Image
-    PIL_AVAILABLE = True
+    HAVE_PIL = True
 except ImportError:
-    PIL_AVAILABLE = False
-    Image = None
+    print("Warning: PIL not available, image processing disabled")
+    HAVE_PIL = False
 
 try:
     from transformers import BlipProcessor, BlipForConditionalGeneration
     import torch
-    TRANSFORMERS_AVAILABLE = True
+    HAVE_TRANSFORMERS = True
 except ImportError:
-    TRANSFORMERS_AVAILABLE = False
+    print("Warning: Transformers not available, advanced image processing disabled")
+    HAVE_TRANSFORMERS = False
 
 logger = logging.getLogger(__name__)
 
 class QuestionProcessor:
-    """Processes student questions and optional image attachments"""
+    """Processes questions and images from students"""
     
     def __init__(self):
-        self.setup_image_processor()
+        # Try to set up image processing
+        self.image_processor = None
+        self.image_model = None
         
-    def setup_image_processor(self):
-        """Setup image processing model for visual question answering"""
-        if not TRANSFORMERS_AVAILABLE or not PIL_AVAILABLE:
-            logger.warning("Image processing dependencies not available. Image processing will be limited.")
-            self.image_processor = None
-            self.image_model = None
-            return
-            
-        try:
-            self.image_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-            self.image_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
-            logger.info("Image processor initialized successfully")
-        except Exception as e:
-            logger.warning(f"Failed to initialize image processor: {e}")
-            self.image_processor = None
-            self.image_model = None
+        if HAVE_TRANSFORMERS and HAVE_PIL:
+            try:
+                print("Loading image processing model...")
+                self.image_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+                self.image_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
+                print("✓ Image processor ready")
+            except Exception as e:
+                print(f"⚠ Couldn't load image model: {e}")
+        else:
+            print("⚠ Image processing not available")
     
-    def process_question(self, question: str, image_data: Optional[str] = None) -> Dict:
+    def process_question(self, question: str, image_data: str = None) -> Dict:
         """
-        Process a student question with optional image attachment
+        Process a student question with optional image
         
-        Args:
-            question: The student's question text
-            image_data: Base64 encoded image data (optional)
-            
-        Returns:
-            Dict containing processed question data
+        Returns dict with processed data
         """
-        processed_data = {
+        # Clean up the question text
+        cleaned = self.clean_question(question)
+        
+        # Extract keywords
+        keywords = self.get_keywords(question)
+        
+        # Classify question type
+        q_type = self.classify_question(question)
+        
+        result = {
             "original_question": question,
-            "cleaned_question": self.clean_text(question),
-            "keywords": self.extract_keywords(question),
-            "question_type": self.classify_question(question),
+            "cleaned_question": cleaned,
+            "keywords": keywords,
+            "question_type": q_type,
             "image_description": None,
             "combined_context": question
         }
         
-        # Process image if provided
+        # Handle image if provided
         if image_data:
             try:
-                image_description = self.process_image(image_data)
-                processed_data["image_description"] = image_description
-                processed_data["combined_context"] = f"{question}\n\nImage content: {image_description}"
+                img_desc = self.process_image(image_data)
+                result["image_description"] = img_desc
+                result["combined_context"] = f"{question}\n\nImage: {img_desc}"
             except Exception as e:
-                logger.error(f"Failed to process image: {e}")
-                processed_data["image_description"] = "Image processing failed"
+                print(f"Image processing failed: {e}")
+                result["image_description"] = "Image processing failed"
         
-        return processed_data
+        return result
     
-    def clean_text(self, text: str) -> str:
-        """Clean and normalize text"""
-        # Remove extra whitespace
+    def clean_question(self, text: str) -> str:
+        """Clean up the question text"""
+        # Remove extra spaces
         text = re.sub(r'\s+', ' ', text.strip())
         
-        # Remove special characters but keep essential punctuation
+        # Keep only alphanumeric and basic punctuation
         text = re.sub(r'[^\w\s\.\?\!\-\(\)]', '', text)
         
         return text
     
-    def extract_keywords(self, text: str) -> List[str]:
-        """Extract keywords from the question"""
-        # Common TDS-related keywords
-        tds_keywords = [
-            'gpt', 'openai', 'ai proxy', 'model', 'token', 'api',
-            'data science', 'python', 'jupyter', 'notebook',
-            'assignment', 'project', 'grading', 'submission',
-            'discord', 'discourse', 'help', 'error', 'bug',
-            'tool', 'library', 'package', 'install', 'setup'
+    def get_keywords(self, text: str) -> List[str]:
+        """Extract important keywords from the question"""
+        # TDS course related keywords
+        course_keywords = [
+            'gpt', 'openai', 'ai', 'model', 'api', 'proxy',
+            'python', 'jupyter', 'notebook', 'pandas', 'numpy',
+            'assignment', 'project', 'ga', 'grading', 'submission',
+            'error', 'help', 'problem', 'install', 'setup',
+            'data', 'science', 'tools', 'library', 'package'
         ]
         
         text_lower = text.lower()
-        found_keywords = []
+        found = []
         
-        for keyword in tds_keywords:
+        # Check for course keywords
+        for keyword in course_keywords:
             if keyword in text_lower:
-                found_keywords.append(keyword)
+                found.append(keyword)
         
-        # Extract technical terms (words with numbers, acronyms, etc.)
-        technical_terms = re.findall(r'\b[A-Z]{2,}\b|\b\w*\d+\w*\b|\b[a-z]+-[a-z]+\b', text)
-        found_keywords.extend(technical_terms)
+        # Find technical terms (words with numbers, capitals, hyphens)
+        tech_terms = re.findall(r'\b[A-Z]{2,}\b|\b\w*\d+\w*\b|\b[a-z]+-[a-z]+\b', text)
+        found.extend(tech_terms)
         
-        return list(set(found_keywords))
+        return list(set(found))  # Remove duplicates
     
     def classify_question(self, text: str) -> str:
-        """Classify the type of question"""
-        text_lower = text.lower()
+        """Figure out what type of question this is"""
+        text = text.lower()
         
-        if any(word in text_lower for word in ['error', 'bug', 'problem', 'issue', 'not working']):
+        # Check for error/problem keywords
+        if any(word in text for word in ['error', 'bug', 'problem', 'issue', 'not working', 'broken']):
             return "troubleshooting"
-        elif any(word in text_lower for word in ['how to', 'how do', 'tutorial', 'guide']):
+        
+        # Check for how-to questions
+        if any(phrase in text for phrase in ['how to', 'how do', 'how can', 'tutorial', 'guide']):
             return "how-to"
-        elif any(word in text_lower for word in ['what is', 'what are', 'define', 'explain']):
+        
+        # Check for definition questions
+        if any(phrase in text for phrase in ['what is', 'what are', 'define', 'explain', 'meaning']):
             return "definition"
-        elif any(word in text_lower for word in ['assignment', 'project', 'submission', 'grading']):
+        
+        # Check for assignment/academic questions
+        if any(word in text for word in ['assignment', 'project', 'submission', 'grading', 'ga', 'marks']):
             return "academic"
-        elif any(word in text_lower for word in ['gpt', 'ai', 'model', 'api']):
+        
+        # Check for AI/model related questions
+        if any(word in text for word in ['gpt', 'ai', 'model', 'api', 'openai']):
             return "ai-related"
-        else:
-            return "general"
+        
+        return "general"
     
     def process_image(self, image_data: str) -> str:
-        """Process base64 image and extract description"""
-        if not PIL_AVAILABLE:
-            return "Image processing not available - PIL not installed"
+        """Process base64 image and get description"""
+        if not HAVE_PIL:
+            return "Image processing not available"
             
-        if not self.image_processor or not self.image_model:
-            return "Image processing model not available"
+        if not self.image_processor:
+            return "Image model not loaded"
         
         try:
-            # Decode base64 image
-            image_bytes = base64.b64decode(image_data)
-            image = Image.open(io.BytesIO(image_bytes))
+            # Decode the base64 image
+            img_bytes = base64.b64decode(image_data)
+            image = Image.open(io.BytesIO(img_bytes))
             
-            # Convert to RGB if necessary
+            # Make sure it's RGB
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            # Generate caption
+            # Generate description using BLIP model
             inputs = self.image_processor(image, return_tensors="pt")
             
             with torch.no_grad():
-                out = self.image_model.generate(**inputs, max_length=100)
-                caption = self.image_processor.decode(out[0], skip_special_tokens=True)
+                output = self.image_model.generate(**inputs, max_length=50)
+                description = self.image_processor.decode(output[0], skip_special_tokens=True)
             
-            # Try to extract text from image using OCR-like description
-            text_description = self.extract_text_description(image)
+            # Add some basic analysis
+            width, height = image.size
+            layout_info = ""
             
-            combined_description = f"Image shows: {caption}"
-            if text_description:
-                combined_description += f". Text/interface elements: {text_description}"
+            if width > height * 1.5:
+                layout_info = " (wide layout - possibly interface/dashboard)"
+            elif height > width * 1.5:
+                layout_info = " (tall layout - possibly document/chat)"
             
-            return combined_description
+            return f"Image shows: {description}{layout_info}"
             
         except Exception as e:
-            logger.error(f"Image processing failed: {e}")
-            return f"Unable to process image: {str(e)}"
-    
-    def extract_text_description(self, image) -> str:
-        """Extract text-like elements from image (simplified)"""
-        if not PIL_AVAILABLE or image is None:
-            return ""
-            
-        # Basic analysis based on image properties
-        width, height = image.size
-        
-        descriptions = []
-        
-        if width > height * 1.5:
-            descriptions.append("wide layout suggesting interface/dashboard")
-        elif height > width * 1.5:
-            descriptions.append("tall layout suggesting document/chat")
-        
-        # Add more heuristics based on your specific use case
-        return ", ".join(descriptions) if descriptions else "" 
+            print(f"Error processing image: {e}")
+            return f"Image processing error: {str(e)}" 
