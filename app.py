@@ -89,6 +89,9 @@ def home():
     })
 
 if __name__ == '__main__':
+    # Disable Flask's auto .env loading to avoid Unicode issues
+    os.environ['FLASK_SKIP_DOTENV'] = '1'
+    
     # Get port from environment (for deployment)
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
