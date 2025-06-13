@@ -1,0 +1,37 @@
+[
+  {
+    "title": "AI Models and APIs",
+    "content": "For TDS assignments, you must use the specific model mentioned in the assignment requirements. When working with GPT models, ensure you use gpt-3.5-turbo-0125 as specified, even if other models like gpt-4o-mini are available through AI Proxy services. Always follow the exact model specifications provided in the assignment instructions.",
+    "url": "https://tds.s-anand.net/#/2025-01/ai-models",
+    "keywords": ["gpt", "ai", "api", "model", "assignment"],
+    "scraped_at": "2025-01-15T10:00:00Z"
+  },
+  {
+    "title": "Token Calculation and Pricing",
+    "content": "When calculating token costs for AI models, use the official tokenization method. For gpt-3.5-turbo-0125, the cost is typically 50 cents per million input tokens. Use proper tokenization libraries to count tokens accurately before submitting cost calculations.",
+    "url": "https://tds.s-anand.net/#/2025-01/token-pricing",
+    "keywords": ["token", "pricing", "cost", "calculation", "gpt"],
+    "scraped_at": "2025-01-15T10:05:00Z"
+  },
+  {
+    "title": "Python Environment Setup",
+    "content": "Ensure you have the correct Python environment setup for TDS assignments. Install required packages using pip and requirements.txt files. Common packages include pandas, numpy, matplotlib, seaborn, and openai for API interactions.",
+    "url": "https://tds.s-anand.net/#/2025-01/python-setup",
+    "keywords": ["python", "setup", "environment", "packages", "installation"],
+    "scraped_at": "2025-01-15T10:10:00Z"
+  },
+  {
+    "title": "Data Visualization Guidelines",
+    "content": "Create clear and informative visualizations for your data science projects. Use appropriate chart types, proper labeling, and follow the color scheme guidelines provided in the course materials. Always include proper titles, axis labels, and legends.",
+    "url": "https://tds.s-anand.net/#/2025-01/visualization",
+    "keywords": ["visualization", "charts", "matplotlib", "seaborn", "data"],
+    "scraped_at": "2025-01-15T10:15:00Z"
+  },
+  {
+    "title": "Assignment Submission Guidelines",
+    "content": "Submit assignments through the designated portal before the deadline. Ensure all files are properly named and include required documentation. Late submissions may incur penalties as specified in the course policy.",
+    "url": "https://tds.s-anand.net/#/2025-01/submission",
+    "keywords": ["assignment", "submission", "deadline", "portal", "documentation"],
+    "scraped_at": "2025-01-15T10:20:00Z"
+  }
+] 

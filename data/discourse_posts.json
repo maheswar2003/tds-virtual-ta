@@ -1,0 +1,74 @@
+[
+  {
+    "topic_id": 155939,
+    "post_id": 1,
+    "title": "GA5 Question 8 Clarification",
+    "content": "<p>I need clarification on Question 8 of GA5. Should I use gpt-4o-mini which AI proxy supports, or gpt-3.5-turbo as mentioned in the question?</p>",
+    "raw_content": "I need clarification on Question 8 of GA5. Should I use gpt-4o-mini which AI proxy supports, or gpt-3.5-turbo as mentioned in the question?",
+    "username": "student123",
+    "created_at": "2025-02-15T14:30:00Z",
+    "url": "https://discourse.onlinedegree.iitm.ac.in/t/ga5-question-8-clarification/155939/1",
+    "keywords": ["gpt", "assignment", "model", "clarification"],
+    "scraped_at": "2025-01-15T11:00:00Z"
+  },
+  {
+    "topic_id": 155939,
+    "post_id": 2,
+    "title": "GA5 Question 8 Clarification",
+    "content": "<p>You must use <code>gpt-3.5-turbo-0125</code>, even if the AI Proxy only supports <code>gpt-4o-mini</code>. Use the OpenAI API directly for this question. The assignment specifically requires this model for proper evaluation.</p>",
+    "raw_content": "You must use `gpt-3.5-turbo-0125`, even if the AI Proxy only supports `gpt-4o-mini`. Use the OpenAI API directly for this question. The assignment specifically requires this model for proper evaluation.",
+    "username": "instructor",
+    "created_at": "2025-02-15T15:45:00Z",
+    "url": "https://discourse.onlinedegree.iitm.ac.in/t/ga5-question-8-clarification/155939/2",
+    "keywords": ["gpt", "instructor", "answer", "requirement"],
+    "scraped_at": "2025-01-15T11:05:00Z"
+  },
+  {
+    "topic_id": 155940,
+    "post_id": 3,
+    "title": "Token Counting for Cost Calculation",
+    "content": "<p>How do I count tokens accurately for the cost calculation part? Should I use the same tokenizer as the model?</p>",
+    "raw_content": "How do I count tokens accurately for the cost calculation part? Should I use the same tokenizer as the model?",
+    "username": "student456",
+    "created_at": "2025-02-16T09:15:00Z",
+    "url": "https://discourse.onlinedegree.iitm.ac.in/t/token-counting-for-cost-calculation/155940/1",
+    "keywords": ["token", "cost", "calculation", "tokenizer"],
+    "scraped_at": "2025-01-15T11:10:00Z"
+  },
+  {
+    "topic_id": 155940,
+    "post_id": 4,
+    "title": "Token Counting for Cost Calculation",
+    "content": "<p>Yes, use the tokenizer corresponding to the model you're using. For gpt-3.5-turbo-0125, you can use the tiktoken library with the 'cl100k_base' encoding. Count both input and output tokens for accurate cost calculation.</p>",
+    "raw_content": "Yes, use the tokenizer corresponding to the model you're using. For gpt-3.5-turbo-0125, you can use the tiktoken library with the 'cl100k_base' encoding. Count both input and output tokens for accurate cost calculation.",
+    "username": "ta_assistant",
+    "created_at": "2025-02-16T10:30:00Z",
+    "url": "https://discourse.onlinedegree.iitm.ac.in/t/token-counting-for-cost-calculation/155940/2",
+    "keywords": ["tiktoken", "encoding", "token", "cost"],
+    "scraped_at": "2025-01-15T11:15:00Z"
+  },
+  {
+    "topic_id": 155941,
+    "post_id": 5,
+    "title": "Installation Issues with OpenAI Package",
+    "content": "<p>I'm getting an error when trying to install the openai package. The error says 'Could not find a version that satisfies the requirement'. How can I fix this?</p>",
+    "raw_content": "I'm getting an error when trying to install the openai package. The error says 'Could not find a version that satisfies the requirement'. How can I fix this?",
+    "username": "student789",
+    "created_at": "2025-02-17T16:20:00Z",
+    "url": "https://discourse.onlinedegree.iitm.ac.in/t/installation-issues-with-openai-package/155941/1",
+    "keywords": ["installation", "error", "openai", "package"],
+    "scraped_at": "2025-01-15T11:20:00Z"
+  },
+  {
+    "topic_id": 155941,
+    "post_id": 6,
+    "title": "Installation Issues with OpenAI Package",
+    "content": "<p>Try upgrading pip first: <code>pip install --upgrade pip</code>. Then install the openai package: <code>pip install openai==1.12.0</code>. Make sure you're using a recent Python version (3.8 or higher).</p>",
+    "raw_content": "Try upgrading pip first: `pip install --upgrade pip`. Then install the openai package: `pip install openai==1.12.0`. Make sure you're using a recent Python version (3.8 or higher).",
+    "username": "ta_assistant",
+    "created_at": "2025-02-17T17:00:00Z",
+    "url": "https://discourse.onlinedegree.iitm.ac.in/t/installation-issues-with-openai-package/155941/2",
+    "keywords": ["pip", "installation", "python", "version"],
+    "scraped_at": "2025-01-15T11:25:00Z"
+  }
+] 

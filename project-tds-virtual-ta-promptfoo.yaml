@@ -1,0 +1,68 @@
+description: "TDS Virtual TA Evaluation"
+
+providers:
+  - id: tds-virtual-ta
+    config:
+      url: "https://your-api-url.com/api/"  # Replace with your actual API URL
+      method: POST
+      headers:
+        Content-Type: application/json
+      body:
+        question: "{{prompt}}"
+
+prompts:
+  - "Should I use gpt-4o-mini which AI proxy supports, or gpt-3.5-turbo?"
+  - "How do I calculate token costs for the assignment?"
+  - "What's the proper way to install the OpenAI package?"
+  - "I'm getting an error when submitting my assignment. What should I do?"
+  - "What visualization libraries should I use for TDS projects?"
+  - "How do I set up my Python environment for the course?"
+  - "What are the assignment submission guidelines?"
+  - "I need help with data preprocessing for my project"
+  - "What's the difference between gpt-3.5-turbo and gpt-4o-mini?"
+  - "How should I structure my final project report?"
+
+tests:
+  - description: "Should provide specific model guidance"
+    vars:
+      prompt: "Should I use gpt-4o-mini which AI proxy supports, or gpt-3.5-turbo?"
+    assert:
+      - type: contains
+        value: "gpt-3.5-turbo-0125"
+      - type: contains
+        value: "OpenAI API"
+  
+  - description: "Should provide token calculation guidance"
+    vars:
+      prompt: "How do I calculate token costs for the assignment?"
+    assert:
+      - type: contains
+        value: "token"
+      - type: contains-any
+        value: ["tiktoken", "tokenizer", "encoding"]
+  
+  - description: "Should provide installation help"
+    vars:
+      prompt: "What's the proper way to install the OpenAI package?"
+    assert:
+      - type: contains
+        value: "pip install"
+      - type: contains
+        value: "openai"
+  
+  - description: "Should include relevant links"
+    vars:
+      prompt: "I need help with assignment submission"
+    assert:
+      - type: is-json
+      - type: javascript
+        value: JSON.parse(output).links && JSON.parse(output).links.length > 0
+  
+  - description: "Should respond within reasonable time"
+    vars:
+      prompt: "What visualization libraries should I use?"
+    assert:
+      - type: latency
+        threshold: 30000  # 30 seconds
+
+outputPath: ./evaluation-results.json 
