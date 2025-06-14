@@ -15,6 +15,7 @@ from flask_cors import CORS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Trigger redeploy 2
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)  # Allow cross-origin requests for evaluation tools
