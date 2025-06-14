@@ -83,7 +83,7 @@ class VirtualTAResponder:
                 # Boost score for important keywords for higher relevance
                 boost_words = {'ga5', 'gpt-3.5-turbo-0125', 'gpt3.5', 'gpt-4o-mini', 'docker', 'podman'}
                 if not boost_words.isdisjoint(common_words):
-                    score += 10 
+                    score += 20
             
             if score > 0:
                 results.append({"score": score, "item": item})
