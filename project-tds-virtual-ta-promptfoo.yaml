@@ -1,68 +1,80 @@
-description: "TDS Virtual TA Evaluation"
+description: "TDS Virtual TA Project Sample (but not the actual evaluation) Questions"
 
 providers:
-  - id: tds-virtual-ta
+  - id: https
     config:
-      url: "https://your-api-url.com/api/"  # Replace with your actual API URL
+      url: http://127.0.0.1:5000/api/ # Point to the local flask app
       method: POST
       headers:
         Content-Type: application/json
-      body:
-        question: "{{prompt}}"
+      body: |
+        {
+          "question": "{{ question }}"{% if image %},
+          "image": "{{ image }}"{% endif %}
+        }
+      transformResponse: json
 
-prompts:
-  - "Should I use gpt-4o-mini which AI proxy supports, or gpt-3.5-turbo?"
-  - "How do I calculate token costs for the assignment?"
-  - "What's the proper way to install the OpenAI package?"
-  - "I'm getting an error when submitting my assignment. What should I do?"
-  - "What visualization libraries should I use for TDS projects?"
-  - "How do I set up my Python environment for the course?"
-  - "What are the assignment submission guidelines?"
-  - "I need help with data preprocessing for my project"
-  - "What's the difference between gpt-3.5-turbo and gpt-4o-mini?"
-  - "How should I structure my final project report?"
+# Ensure JSON schema
+defaultTest:
+  assert:
+    - type: is-json
+      value:
+        type: object
+        required: [answer, links]
+        properties:
+          answer: { type: string }
+          links:
+            type: array
+            items:
+              type: object
+              required: [url, text]
+              properties:
+                url: { type: string }
+                text: { type: string }
 
 tests:
-  - description: "Should provide specific model guidance"
-    vars:
-      prompt: "Should I use gpt-4o-mini which AI proxy supports, or gpt-3.5-turbo?"
+  - vars:
+      question: The question asks to use gpt-3.5-turbo-0125 model but the ai-proxy provided by Anand sir only supports gpt-4o-mini. So should we just use gpt-4o-mini or use the OpenAI API for gpt3.5 turbo?
+      image: file://project-tds-virtual-ta-q1.webp
+      link: https://discourse.onlinedegree.iitm.ac.in/t/ga5-question-8-clarification/155939
     assert:
+      - type: llm-rubric
+        transform: output.answer
+        value: Clarifies use of gpt-3.5-turbo-0125 not gpt-4o-mini
       - type: contains
-        value: "gpt-3.5-turbo-0125"
-      - type: contains
-        value: "OpenAI API"
-  
-  - description: "Should provide token calculation guidance"
-    vars:
-      prompt: "How do I calculate token costs for the assignment?"
-    assert:
-      - type: contains
-        value: "token"
-      - type: contains-any
-        value: ["tiktoken", "tokenizer", "encoding"]
-  
-  - description: "Should provide installation help"
-    vars:
-      prompt: "What's the proper way to install the OpenAI package?"
-    assert:
-      - type: contains
-        value: "pip install"
-      - type: contains
-        value: "openai"
-  
-  - description: "Should include relevant links"
-    vars:
-      prompt: "I need help with assignment submission"
-    assert:
-      - type: is-json
-      - type: javascript
-        value: JSON.parse(output).links && JSON.parse(output).links.length > 0
-  
-  - description: "Should respond within reasonable time"
-    vars:
-      prompt: "What visualization libraries should I use?"
-    assert:
-      - type: latency
-        threshold: 30000  # 30 seconds
+        transform: JSON.stringify(output.links)
+        value: https://discourse.onlinedegree.iitm.ac.in/t/ga5-question-8-clarification/155939
 
-outputPath: ./evaluation-results.json 
+  - vars:
+      question: If a student scores 10/10 on GA4 as well as a bonus, how would it appear on the dashboard?
+      link: https://discourse.onlinedegree.iitm.ac.in/t/ga4-data-sourcing-discussion-thread-tds-jan-2025/165959
+    assert:
+      - type: llm-rubric
+        transform: output.answer
+        value: Mentions the dashboard showing "110"
+      - type: contains
+        transform: JSON.stringify(output.links)
+        value: https://discourse.onlinedegree.iitm.ac.in/t/ga4-data-sourcing-discussion-thread-tds-jan-2025/165959
+  - vars:
+      question: I know Docker but have not used Podman before. Should I use Docker for this course?
+    assert:
+      - type: llm-rubric
+        transform: output.answer
+        value: Recommends Podman for the course
+      - type: llm-rubric
+        transform: output.answer
+        value: Mentions that Docker is acceptable
+      - type: contains
+        transform: JSON.stringify(output.links)
+        value: https://tds.s-anand.net/#/docker
+  - vars:
+      question: When is the TDS Sep 2025 end-term exam?
+    assert:
+      - type: llm-rubric
+        transform: output.answer
+        value: Says it doesn't know (since this information is not available yet)
+
+writeLatestResults: true
+
+commandLineOptions:
+  cache: true 

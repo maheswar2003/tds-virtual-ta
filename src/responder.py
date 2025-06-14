@@ -28,7 +28,7 @@ class VirtualTAResponder:
         self.discourse_posts = []
 
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-        course_content_path = os.path.join(project_root, 'data', 'course_content.json')
+        course_content_path = os.path.join(project_root, 'data', 'tds_course_content.json')
         discourse_posts_path = os.path.join(project_root, 'data', 'discourse_posts.json')
         
         try:
@@ -60,7 +60,7 @@ class VirtualTAResponder:
         Gives a significant score boost for critical keywords.
         """
         question_lower = question.lower()
-        query_words = set(re.findall(r'[\w.-]+', question_lower))
+        query_words = set(re.findall(r'[\\w.-]+', question_lower))
         
         if not query_words:
             return []
