@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests
+CORS(app)  # Allow cross-origin requests for evaluation tools
 
 # Import our modules
 try:
