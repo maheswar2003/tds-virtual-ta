@@ -1,12 +1,14 @@
 [build]
 # Use Python 3.11 for compatibility
 nixpacks.version = "1.x"
+builder = "NIXPACKS"
 
 [deploy]
 # Start command for the Flask app
-startCommand = "gunicorn --bind 0.0.0.0:$PORT app:app"
+startCommand = "gunicorn app:app"
 healthcheckPath = "/health"
-restartPolicyType = "always"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
 
 [environment]
 # Production environment
