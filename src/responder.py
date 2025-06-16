@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Responder module for generating answers to student questions.
-Completely rewritten with advanced search algorithm.
+Rewritten with a more robust search algorithm to improve accuracy.
 """
 
 import json
@@ -58,66 +58,61 @@ class VirtualTAResponder:
         """Clean and normalize text for better matching."""
         if not text:
             return ""
-        # Remove extra whitespace and normalize
         text = re.sub(r'\s+', ' ', text.strip())
-        # Remove escape characters and newlines
         text = text.replace('\\n', ' ').replace('\n', ' ')
         text = text.replace('\\"', '"').replace("\\'", "'")
-        return text
+        return text.lower()
 
     def extract_keywords(self, text: str) -> List[str]:
         """Extract meaningful keywords from text."""
-        text = text.lower()
-        # Extract words, numbers, and technical terms
-        words = re.findall(r'[\w.-]+', text)
-        # Filter out common stop words but keep technical terms
+        words = re.findall(r'[\w.-]+', text.lower())
         stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'}
-        keywords = [word for word in words if len(word) > 2 and word not in stop_words]
-        return keywords
+        return [word for word in words if len(word) > 2 and word not in stop_words]
 
     def calculate_relevance_score(self, question: str, item: Dict) -> Tuple[float, str]:
-        """Calculate relevance score between question and content item."""
-        question_clean = self.clean_text(question.lower())
+        """Calculate a more robust relevance score."""
+        question_clean = self.clean_text(question)
         question_keywords = set(self.extract_keywords(question_clean))
         
-        # Get item content
         title = self.clean_text(item.get("title", ""))
         content = self.clean_text(item.get("content", ""))
-        full_text = (title + " " + content).lower()
+        full_text = title + " " + content
         
         if not full_text.strip():
             return 0.0, ""
-        
+
+        # **CRITICAL FIX: Negative Keyword Filtering**
+        # Penalize documents that contain project meta-descriptions.
+        negative_keywords = [
+            "out of kindness for your teaching assistants",
+            "you have decided to build an api",
+            "create a virtual teaching assistant"
+        ]
+        if any(neg_kw in full_text for neg_kw in negative_keywords):
+            return 0.0, ""
+
         content_keywords = set(self.extract_keywords(full_text))
-        
-        # Base score: keyword overlap
         common_keywords = question_keywords.intersection(content_keywords)
+        
         if not common_keywords:
             return 0.0, ""
         
-        base_score = len(common_keywords) / max(len(question_keywords), 1)
+        # Base score: Jaccard similarity
+        jaccard_similarity = len(common_keywords) / len(question_keywords.union(content_keywords))
         
-        # Boost for exact phrase matches
-        phrase_boost = 0
-        question_phrases = re.findall(r'[\w.-]{3,}', question_clean)
-        for phrase in question_phrases:
-            if phrase in full_text:
-                phrase_boost += 0.5
-        
-        # Special boost for critical terms
+        # **CRITICAL FIX: Massively Boost Critical Terms**
         critical_terms = {
-            'gpt-3.5-turbo-0125': 10,
-            'gpt-4o-mini': 8,
-            'openai': 5,
-            'api': 3,
-            'docker': 5,
-            'podman': 5,
-            'ga4': 8,
-            'dashboard': 3,
-            'bonus': 3,
-            '110': 5,
-            'exam': 3,
-            'tds': 2
+            'gpt-3.5-turbo-0125': 50,
+            'gpt-4o-mini': 40,
+            'podman': 30,
+            'docker': 25,
+            'ga4': 20,
+            'dashboard': 15,
+            'bonus': 15,
+            '110': 20,
+            'exam': 10,
+            'openai': 10,
+            'api': 5
         }
         
         critical_boost = 0
@@ -125,16 +120,17 @@ class VirtualTAResponder:
             if term in question_clean and term in full_text:
                 critical_boost += boost
         
-        # Similarity boost using difflib
-        similarity = difflib.SequenceMatcher(None, question_clean, full_text[:500]).ratio()
-        similarity_boost = similarity * 2
-        
-        total_score = base_score + phrase_boost + critical_boost + similarity_boost
+        # Phrase match boost
+        phrase_boost = 0
+        if question_clean in full_text:
+            phrase_boost = 100  # Huge boost for exact matches
+
+        total_score = (jaccard_similarity * 10) + critical_boost + phrase_boost
         
         return total_score, full_text
 
     def find_relevant_content(self, question: str) -> List[Dict]:
-        """Find the most relevant content using advanced scoring."""
+        """Find the most relevant content using the improved scoring."""
         if not question.strip():
             return []
         
@@ -147,80 +143,62 @@ class VirtualTAResponder:
                 scored_results.append({
                     "score": score,
                     "item": item,
-                    "matched_text": text[:200] + "..." if len(text) > 200 else text
+                    "matched_text": text
                 })
         
-        # Sort by score descending
         scored_results.sort(key=lambda x: x["score"], reverse=True)
         
-        # Log top matches for debugging
         if scored_results:
-            logger.info(f"Top match score: {scored_results[0]['score']:.2f}")
-            logger.info(f"Top match preview: {scored_results[0]['matched_text'][:100]}...")
+            logger.info(f"Top match '{scored_results[0]['item'].get('title', '')}' score: {scored_results[0]['score']:.2f}")
         
         return scored_results
 
     def extract_clean_answer(self, content: str) -> str:
-        """Extract a clean answer from content, handling embedded JSON."""
+        """Extract a more reliable answer from content."""
         if not content:
-            return "No content available."
+            return "No specific answer found in the provided content."
         
-        # Look for embedded JSON answers first
-        json_pattern = r'"answer"\s*:\s*"([^"]+)"'
-        json_match = re.search(json_pattern, content)
-        if json_match:
-            answer = json_match.group(1)
-            # Clean up escape characters
-            answer = answer.replace('\\n', '\n').replace('\\"', '"').replace("\\'", "'")
-            return answer
-        
-        # Look for clear answer patterns
-        answer_patterns = [
-            r'(?:answer|response):\s*(.+?)(?:\n|$)',
-            r'(?:you must|you should|recommendation):\s*(.+?)(?:\n|\.)',
-            r'^(.+?)(?:\n|$)'  # First line as fallback
-        ]
-        
-        for pattern in answer_patterns:
-            match = re.search(pattern, content, re.IGNORECASE | re.MULTILINE)
-            if match:
-                answer = match.group(1).strip()
-                if len(answer) > 10:  # Ensure it's substantial
-                    return answer
-        
-        # Fallback: return first meaningful sentence
+        # Prioritize clear, direct sentences
         sentences = re.split(r'[.!?]+', content)
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if len(sentence) > 20:
-                return sentence
         
-        return content[:200] + "..." if len(content) > 200 else content
+        # Look for sentences with keywords like 'must', 'should', 'is', 'are'
+        priority_keywords = ['you must', 'you should', 'the answer is', 'it is recommended', 'use']
+        for sentence in sentences:
+            for priority_kw in priority_keywords:
+                if priority_kw in sentence.lower():
+                    return sentence.strip()
+
+        # Fallback to first meaningful sentence
+        for sentence in sentences:
+            if len(sentence.strip()) > 30: # Avoid very short, unhelpful sentences
+                return sentence.strip()
+        
+        return content[:300] + "..." if len(content) > 300 else content
 
     def generate_response(self, question_data: Dict) -> Dict:
-        """Generate the final JSON response with improved answer extraction."""
+        """Generate the final JSON response with improved logic."""
         original_question = question_data.get('original_question', '')
         relevant_items = self.find_relevant_content(original_question)
         
-        if relevant_items and relevant_items[0]["score"] > 0.5:  # Higher threshold
+        if relevant_items and relevant_items[0]["score"] > 10:  # Use a score threshold
             best_item = relevant_items[0]["item"]
-            raw_content = best_item.get('content', '')
             
-            # Extract clean answer
+            # Use the full content of the best item for answer extraction
+            raw_content = best_item.get('content', '') or best_item.get('title', '')
             answer = self.extract_clean_answer(raw_content)
             
-            # Generate links
             links = []
             seen_urls = set()
             
-            for result in relevant_items[:3]:  # Top 3 results
+            for result in relevant_items[:3]:
                 item = result['item']
-                url = item.get('url', '')
+                url = item.get('url')
+                # **CRITICAL FIX: Use the actual title for the link text**
                 title = item.get('title', 'Relevant Resource')
                 
                 if url and url not in seen_urls:
                     links.append({
-                        "text": title[:100] + "..." if len(title) > 100 else title,
+                        "text": self.clean_text(title).strip().title(),
                         "url": url
                     })
                     seen_urls.add(url)
@@ -228,9 +206,9 @@ class VirtualTAResponder:
             logger.info(f"Generated answer: {answer[:100]}...")
             
         else:
-            answer = "I couldn't find a specific answer in the course materials. Please try rephrasing your question with more specific keywords."
+            answer = "I'm sorry, I couldn't find a specific answer in the course materials. Please try rephrasing your question or checking the Discourse forum directly."
             links = []
-            logger.info("No relevant content found")
+            logger.info(f"No relevant content found for question: {original_question}")
         
         return {
             "answer": answer,
