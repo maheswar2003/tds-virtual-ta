@@ -4,8 +4,8 @@ nixpacks.version = "1.x"
 builder = "NIXPACKS"
 
 [deploy]
-# Start command for the Flask app
-startCommand = "gunicorn app:app"
+# Start command for the Flask app - Fixed gunicorn syntax
+startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT"
 healthcheckPath = "/health"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
