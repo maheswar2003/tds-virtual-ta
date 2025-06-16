@@ -1,179 +1,163 @@
 #!/usr/bin/env python3
 """
 Responder module for generating answers to student questions.
-Final, robust version with pre-computation and advanced answer extraction.
+Simple, reliable version focused on accurate keyword matching.
 """
 
 import json
 import logging
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List
 import re
 
 logger = logging.getLogger(__name__)
 
 class VirtualTAResponder:
-    """Generates answers using a pre-computed, sanitized data source."""
+    """Simple, reliable responder using basic keyword matching."""
     
     def __init__(self):
-        """Initializes the responder, loads data, and pre-computes clean text."""
-        self.all_content = []
-        self._load_and_clean_data()
+        """Initialize responder and load data."""
+        self.course_content = []
+        self.discourse_posts = []
+        self.load_data()
         
-    def _radical_clean(self, text: str) -> str:
-        """Aggressively removes junk, code, and meta-text. V2."""
-        if not text:
-            return ""
-        # Remove URLs
-        text = re.sub(r'https?://\S+', '', text)
-        # Remove code blocks and HTML tags
-        text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
-        text = re.sub(r'\{.*?\}', '', text, flags=re.DOTALL)
-        text = re.sub(r'<.*?>', '', text, flags=re.DOTALL)
-        # Remove bracketed content like [skip ci]
-        text = re.sub(r'\[.*?\]', '', text, flags=re.DOTALL)
-        
-        # Remove UI text and instructions
-        negative_patterns = [
-            'copy to clipboard', 'error copied', 'this is a real question',
-            'the response must be a json object', 'screenshot', 'for example',
-            'relevant resource', 'related resources', 'rawcontent', 'statuscode',
-            'like this:', 'must accept a post request', 'out of kindness',
-            'github cli', 'super-linter', 'release drafter', 'git push', 'exit 0'
-        ]
-        for pattern in negative_patterns:
-            text = re.sub(pattern, '', text, flags=re.IGNORECASE)
-            
-        # Normalize whitespace and remove leftover characters that are not part of prose
-        text = text.replace('`', '').replace('"', "'").replace('|', ' ')
-        text = re.sub(r'\s+', ' ', text).strip()
-        return text
-
-    def _load_and_clean_data(self):
-        """Loads data and pre-computes a clean, searchable text field for each item."""
+    def load_data(self):
+        """Load course content and discourse posts."""
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
         course_content_path = os.path.join(project_root, 'data', 'tds_course_content.json')
         discourse_posts_path = os.path.join(project_root, 'data', 'discourse_posts.json')
         
-        raw_content = []
         try:
             if os.path.exists(course_content_path):
                 with open(course_content_path, "r", encoding="utf-8") as f:
-                    raw_content.extend(json.load(f))
-                logger.info("✅ Loaded course content.")
+                    self.course_content = json.load(f)
+                logger.info(f"✅ Loaded {len(self.course_content)} course items.")
+            
             if os.path.exists(discourse_posts_path):
                 with open(discourse_posts_path, "r", encoding="utf-8") as f:
-                    raw_content.extend(json.load(f))
-                logger.info("✅ Loaded discourse posts.")
+                    self.discourse_posts = json.load(f)
+                logger.info(f"✅ Loaded {len(self.discourse_posts)} discourse posts.")
+                
         except Exception as e:
             logger.error(f"⚠️ Could not load data files: {e}")
 
-        if not raw_content:
-            logger.error("❌ No data loaded. The responder is offline.")
-            return
+    def clean_text(self, text: str) -> str:
+        """Basic text cleaning - minimal processing."""
+        if not text:
+            return ""
+        # Just normalize whitespace and make lowercase
+        text = re.sub(r'\s+', ' ', text.strip()).lower()
+        return text
 
-        for item in raw_content:
-            full_raw_text = item.get('title', '') + " " + item.get('content', '')
-            # Create a new key with the sanitized text for searching
-            item['clean_search_text'] = self._radical_clean(full_raw_text)
+    def extract_keywords(self, text: str) -> List[str]:
+        """Extract keywords from text."""
+        words = re.findall(r'\b\w+\b', text.lower())
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+        return [word for word in words if len(word) > 2 and word not in stop_words]
+
+    def calculate_relevance_score(self, question: str, item: Dict) -> float:
+        """Calculate relevance score based on keyword overlap."""
+        question_keywords = set(self.extract_keywords(question))
         
-        self.all_content = raw_content
-        logger.info(f"✅ Pre-computation complete. {len(self.all_content)} items ready for search.")
-
-    def _get_keywords(self, text: str) -> set:
-        """Utility to get a set of keywords from text."""
-        words = re.findall(r'[\w.-]+', text.lower())
-        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were'}
-        return {word for word in words if len(word) > 2 and word not in stop_words}
+        title = self.clean_text(item.get("title", ""))
+        content = self.clean_text(item.get("content", ""))
+        full_text = title + " " + content
+        
+        content_keywords = set(self.extract_keywords(full_text))
+        common_keywords = question_keywords.intersection(content_keywords)
+        
+        if not common_keywords:
+            return 0.0
+        
+        # Base score
+        score = len(common_keywords)
+        
+        # Boost for specific terms
+        question_lower = question.lower()
+        if 'gpt-3.5-turbo' in question_lower and 'gpt-3.5-turbo' in full_text:
+            score += 10
+        if 'gpt-4o-mini' in question_lower and 'gpt-4o-mini' in full_text:
+            score += 8
+        if 'podman' in question_lower and 'podman' in full_text:
+            score += 5
+        
+        return score
 
     def find_relevant_content(self, question: str) -> List[Dict]:
-        """Finds relevant content using the pre-computed clean text."""
-        question_keywords = self._get_keywords(question)
-        
+        """Find relevant content items."""
+        all_content = self.course_content + self.discourse_posts
         scored_results = []
-        for item in self.all_content:
-            if not item.get('clean_search_text'):
-                continue
+        
+        for item in all_content:
+            score = self.calculate_relevance_score(question, item)
+            if score > 0:
+                scored_results.append({
+                    "score": score,
+                    "item": item
+                })
+        
+        return sorted(scored_results, key=lambda x: x["score"], reverse=True)
 
-            content_keywords = self._get_keywords(item['clean_search_text'])
-            common_keywords = question_keywords.intersection(content_keywords)
-            
-            if not common_keywords:
-                continue
-
-            # Scoring based on keyword overlap and boosting critical terms
-            score = len(common_keywords) * 5
-            
-            critical_terms = {
-                'gpt-3.5-turbo-0125': 50, 'gpt-4o-mini': 40, 'podman': 30, 
-                'docker': 25, 'ga4': 20, 'dashboard': 15, 'api key': 20
-            }
-            for term, boost in critical_terms.items():
-                if term in question.lower() and term in item['clean_search_text'].lower():
-                    score += boost
-            
-            scored_results.append({'score': score, 'item': item})
-
-        return sorted(scored_results, key=lambda x: x['score'], reverse=True)
-
-    def extract_final_answer(self, item: Dict, question: str) -> str:
-        """Extracts the best possible sentence as the answer. V2."""
-        clean_text = item.get('clean_search_text', '')
-        question_keywords = self._get_keywords(question)
-
-        sentences = re.split(r'[.!?]+', clean_text)
+    def extract_answer(self, content: str, question: str) -> str:
+        """Extract a clean answer from content."""
+        if not content:
+            return "No specific answer found."
+        
+        # Split into sentences
+        sentences = re.split(r'[.!?]+', content)
+        question_keywords = set(self.extract_keywords(question))
+        
         best_sentence = ""
-        highest_score = -1
-
+        best_score = 0
+        
         for sentence in sentences:
             sentence = sentence.strip()
-            # Basic quality checks for a sentence
-            if len(sentence) < 25 or len(sentence) > 400: # Filter out fragments and long paragraphs
+            if len(sentence) < 20 or len(sentence) > 300:
                 continue
-            if sentence.count(' ') < 3: # Must have at least a few words
-                continue
-
-            sentence_keywords = self._get_keywords(sentence)
-            common_keywords = question_keywords.intersection(sentence_keywords)
+                
+            sentence_keywords = set(self.extract_keywords(sentence))
+            overlap = len(question_keywords.intersection(sentence_keywords))
             
-            # Score is based on keyword overlap
-            score = len(common_keywords)
-
-            # Boost for direct answer phrases
-            if any(phrase in sentence.lower() for phrase in ['you must', 'you should', 'the answer is', 'it is recommended to']):
-                score += 3
-            
-            if score > highest_score:
-                highest_score = score
+            if overlap > best_score:
+                best_score = overlap
                 best_sentence = sentence
-
-        return best_sentence if highest_score > 0 else "I found some relevant information, but not a direct answer. It's best to check the linked resources."
+        
+        return best_sentence if best_sentence else content[:200] + "..."
 
     def generate_response(self, question_data: Dict) -> Dict:
-        """The main response generation function."""
+        """Generate response to user question."""
         original_question = question_data.get('original_question', '')
         if not original_question:
             return {"answer": "Please provide a question.", "links": []}
 
         relevant_items = self.find_relevant_content(original_question)
         
-        if not relevant_items or relevant_items[0]['score'] < 10:
+        if not relevant_items:
             return {
-                "answer": "I'm sorry, I couldn't find a specific answer in the course materials. Please try rephrasing your question or checking the Discourse forum directly.",
+                "answer": "I couldn't find relevant information for your question. Please try rephrasing it.",
                 "links": []
             }
 
-        best_item = relevant_items[0]['item']
-        answer = self.extract_final_answer(best_item, original_question)
+        # Get the best match
+        best_item = relevant_items[0]["item"]
+        raw_content = best_item.get('content', '') or best_item.get('title', '')
+        answer = self.extract_answer(raw_content, original_question)
         
+        # Prepare links
         links = []
         seen_urls = set()
-        for res in relevant_items[:3]:
-            item = res['item']
+        for result in relevant_items[:3]:
+            item = result['item']
             url = item.get('url')
-            title = self._radical_clean(item.get('title', 'Relevant Resource'))
+            title = item.get('title', 'Relevant Resource')
             if url and url not in seen_urls:
-                links.append({"text": title.title(), "url": url})
+                links.append({
+                    "text": title,
+                    "url": url
+                })
                 seen_urls.add(url)
         
-        return {"answer": answer, "links": links}
+        return {
+            "answer": answer,
+            "links": links
+        }
