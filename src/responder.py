@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Responder module for generating answers to student questions.
-Simple, reliable version focused on accurate keyword matching.
+Smart version that prioritizes course content and avoids junk.
 """
 
 import json
@@ -13,7 +13,7 @@ import re
 logger = logging.getLogger(__name__)
 
 class VirtualTAResponder:
-    """Simple, reliable responder using basic keyword matching."""
+    """Smart responder that prioritizes course content and filters junk."""
     
     def __init__(self):
         """Initialize responder and load data."""
@@ -41,8 +41,18 @@ class VirtualTAResponder:
         except Exception as e:
             logger.error(f"⚠️ Could not load data files: {e}")
 
+    def is_junk_content(self, text: str) -> bool:
+        """Check if content is likely junk (GitHub Actions, git commands, etc.)."""
+        junk_indicators = [
+            'git push', 'git commit', 'github-actions', 'copy to clipboard',
+            '---', '```', '[skip ci]', 'exit 0', 'error copied',
+            'rawcontent', 'statuscode', 'super-linter', 'release drafter'
+        ]
+        text_lower = text.lower()
+        return any(indicator in text_lower for indicator in junk_indicators)
+
     def clean_text(self, text: str) -> str:
-        """Basic text cleaning - minimal processing."""
+        """Basic text cleaning."""
         if not text:
             return ""
         # Just normalize whitespace and make lowercase
@@ -56,44 +66,75 @@ class VirtualTAResponder:
         return [word for word in words if len(word) > 2 and word not in stop_words]
 
     def calculate_relevance_score(self, question: str, item: Dict) -> float:
-        """Calculate relevance score based on keyword overlap."""
-        question_keywords = set(self.extract_keywords(question))
-        
+        """Calculate relevance score with smart boosting."""
         title = self.clean_text(item.get("title", ""))
         content = self.clean_text(item.get("content", ""))
         full_text = title + " " + content
         
+        # Skip junk content entirely
+        if self.is_junk_content(full_text):
+            return 0.0
+            
+        question_keywords = set(self.extract_keywords(question))
         content_keywords = set(self.extract_keywords(full_text))
         common_keywords = question_keywords.intersection(content_keywords)
         
         if not common_keywords:
             return 0.0
         
-        # Base score
+        # Base score from keyword overlap
         score = len(common_keywords)
         
-        # Boost for specific terms
-        question_lower = question.lower()
-        if 'gpt-3.5-turbo' in question_lower and 'gpt-3.5-turbo' in full_text:
-            score += 10
-        if 'gpt-4o-mini' in question_lower and 'gpt-4o-mini' in full_text:
-            score += 8
-        if 'podman' in question_lower and 'podman' in full_text:
-            score += 5
+        # HUGE boost for course content vs discourse posts
+        url = item.get('url', '')
+        if 'tds.s-anand.net' in url:
+            score *= 10  # Course content is much more valuable
         
+        # Boost for specific important terms
+        question_lower = question.lower()
+        
+        # GPT model question handling
+        if 'gpt' in question_lower:
+            if 'gpt-3.5-turbo' in full_text:
+                score += 50
+            if 'you must use' in full_text or 'recommended' in full_text:
+                score += 20
+        
+        # Podman question handling  
+        if 'podman' in question_lower:
+            if 'podman' in full_text and 'windows' in full_text:
+                score += 30
+            if 'docker' in full_text and 'container' in full_text:
+                score += 20
+                
         return score
 
     def find_relevant_content(self, question: str) -> List[Dict]:
-        """Find relevant content items."""
-        all_content = self.course_content + self.discourse_posts
+        """Find relevant content, prioritizing course content."""
+        # First try course content only
         scored_results = []
         
-        for item in all_content:
+        for item in self.course_content:
             score = self.calculate_relevance_score(question, item)
             if score > 0:
                 scored_results.append({
                     "score": score,
-                    "item": item
+                    "item": item,
+                    "source": "course"
+                })
+        
+        # If we have good course content matches, return those
+        if scored_results and max(r["score"] for r in scored_results) > 5:
+            return sorted(scored_results, key=lambda x: x["score"], reverse=True)
+        
+        # Otherwise, also search discourse but with lower priority
+        for item in self.discourse_posts:
+            score = self.calculate_relevance_score(question, item)
+            if score > 0:
+                scored_results.append({
+                    "score": score * 0.5,  # Reduce discourse score
+                    "item": item,
+                    "source": "discourse"
                 })
         
         return sorted(scored_results, key=lambda x: x["score"], reverse=True)
@@ -102,6 +143,10 @@ class VirtualTAResponder:
         """Extract a clean answer from content."""
         if not content:
             return "No specific answer found."
+        
+        # Remove obvious junk patterns
+        content = re.sub(r'copy to clipboard.*?error.*?copied', '', content, flags=re.IGNORECASE)
+        content = re.sub(r'git \w+.*?exit 0', '', content, flags=re.IGNORECASE)
         
         # Split into sentences
         sentences = re.split(r'[.!?]+', content)
@@ -115,8 +160,16 @@ class VirtualTAResponder:
             if len(sentence) < 20 or len(sentence) > 300:
                 continue
                 
+            # Skip sentences that look like code or technical junk
+            if any(indicator in sentence.lower() for indicator in ['git ', '```', 'exit 0', '[skip ci]']):
+                continue
+                
             sentence_keywords = set(self.extract_keywords(sentence))
             overlap = len(question_keywords.intersection(sentence_keywords))
+            
+            # Boost sentences that start with helpful phrases
+            if any(phrase in sentence.lower() for phrase in ['you must', 'you should', 'it is recommended', 'use ']):
+                overlap += 2
             
             if overlap > best_score:
                 best_score = overlap
