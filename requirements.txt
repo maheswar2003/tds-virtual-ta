@@ -8,9 +8,9 @@ openai==1.12.0
 python-dotenv==1.0.0
 gunicorn==21.2.0
 
-# Basic data processing
-numpy==1.26.3
-pandas==2.2.0
+# Basic data processing - REMOVED pandas/numpy to avoid compilation issues
+# numpy==1.26.4
+# pandas==2.2.2
 
 # Optional advanced features (comment out for lightweight deployment)
 # scikit-learn==1.4.0

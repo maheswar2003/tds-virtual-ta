@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDS Virtual TA - IIT Madras</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        .header-info {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .header-info h2 {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .header-info p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .welcome {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .welcome h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome p {
+            font-size: 1.1rem;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .chat-container {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .chat-input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-messages {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-left: 2rem;
+        }
+
+        .message.assistant {
+            background: white;
+            border: 1px solid #e2e8f0;
+            margin-right: 2rem;
+        }
+
+        .message-content {
+            margin-bottom: 0.5rem;
+        }
+
+        .message-links {
+            margin-top: 1rem;
+        }
+
+        .message-links h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .link-item {
+            display: block;
+            color: #667eea;
+            text-decoration: none;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.25rem;
+            transition: background 0.2s ease;
+        }
+
+        .link-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .feature i {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .feature h3 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .feature p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .api-info {
+            background: #1a202c;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .api-info h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .code-block {
+            background: #2d3748;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+                border-radius: 15px;
+            }
+            
+            .welcome h1 {
+                font-size: 2rem;
+            }
+            
+            .chat-input-group {
+                flex-direction: column;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <span>TDS Virtual TA</span>
+            </div>
+            <div class="header-info">
+                <h2>IIT Madras</h2>
+                <p>Tools in Data Science Course</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <div class="welcome">
+                <h1>Welcome to TDS Virtual TA</h1>
+                <p>Your AI-powered teaching assistant for the Tools in Data Science course. Ask questions about course content, assignments, or technical concepts!</p>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-input-group">
+                    <input type="text" class="chat-input" placeholder="Ask me anything about TDS course..." id="questionInput">
+                    <button class="send-btn" onclick="askQuestion()" id="sendBtn">
+                        <i class="fas fa-paper-plane"></i>
+                        Ask
+                    </button>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <span style="margin-left: 10px;">Thinking...</span>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages"></div>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <i class="fas fa-brain"></i>
+                    <h3>AI-Powered</h3>
+                    <p>Uses advanced AI to understand and answer your questions intelligently</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-book"></i>
+                    <h3>Course Content</h3>
+                    <p>Searches through official course materials and Discourse discussions</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-clock"></i>
+                    <h3>24/7 Available</h3>
+                    <p>Get help anytime, anywhere with instant responses</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-link"></i>
+                    <h3>Relevant Links</h3>
+                    <p>Provides links to related discussions and course materials</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="api-info">
+                <h3><i class="fas fa-code"></i> API Documentation</h3>
+                <p>For developers and automated tools:</p>
+                
+                <div class="code-block">
+<strong>Endpoint:</strong> POST /api/
+
+<strong>Request:</strong>
+{
+  "question": "Should I use gpt-4o-mini or gpt-3.5-turbo?",
+  "image": "base64_image_data (optional)"
+}
+
+<strong>Response:</strong>
+{
+  "answer": "You must use gpt-3.5-turbo-0125...",
+  "links": [
+    {
+      "url": "https://discourse.onlinedegree.iitm.ac.in/t/...",
+      "text": "Discussion title"
+    }
+  ]
+}
+                </div>
+
+                <p><strong>Example with curl:</strong></p>
+                <div class="code-block">
+curl -X POST "{{ request.url_root }}api/" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Your question here"}'
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function askQuestion() {
+            const input = document.getElementById('questionInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const loading = document.getElementById('loading');
+            const chatMessages = document.getElementById('chatMessages');
+            
+            const question = input.value.trim();
+            if (!question) return;
+            
+            // Add user message
+            addMessage(question, 'user');
+            
+            // Show loading
+            loading.style.display = 'block';
+            sendBtn.disabled = true;
+            input.value = '';
+            
+            try {
+                const response = await fetch('/api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addMessage(data.answer || 'No answer provided', 'assistant', data.links || []);
+                } else {
+                    addMessage(`Error: ${data.error || 'Something went wrong'}`, 'assistant');
+                }
+            } catch (error) {
+                addMessage(`Network error: ${error.message}`, 'assistant');
+            } finally {
+                loading.style.display = 'none';
+                sendBtn.disabled = false;
+            }
+        }
+        
+        function addMessage(content, type, links = []) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            let linksHtml = '';
+            if (links && links.length > 0) {
+                linksHtml = `
+                    <div class="message-links">
+                        <h4>📚 Related Resources:</h4>
+                        ${links.map(link => 
+                            `<a href="${link.url}" target="_blank" class="link-item">
+                                <i class="fas fa-external-link-alt"></i> ${link.text}
+                            </a>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">${content}</div>
+                ${linksHtml}
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Enter key support
+        document.getElementById('questionInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                askQuestion();
+            }
+        });
+
+        // Add welcome message
+        window.addEventListener('load', function() {
+            addMessage('👋 Hello! I\'m your TDS Virtual TA. Ask me anything about the Tools in Data Science course, assignments, or technical concepts. Try asking: "Should I use gpt-4o-mini or gpt-3.5-turbo?"', 'assistant');
+        });
+    </script>
+</body>
+</html> 

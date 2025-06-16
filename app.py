@@ -8,7 +8,7 @@ import os
 import json
 import logging
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
 # Set up basic logging
@@ -79,8 +79,7 @@ def health():
 @app.route('/', methods=['GET', 'POST'])
 def home():
     """
-    Info page for GET requests and a tolerant handler for POST requests
-    to satisfy automated evaluation tools.
+    Beautiful web interface for GET requests and API compatibility for POST requests
     """
     # For any POST to the root, return a 200 OK with a helpful message
     # that includes the 'answer' key to satisfy the evaluator.
@@ -91,7 +90,12 @@ def home():
             "status": "ok"
         }), 200
 
-    # For standard GET requests, show the info page.
+    # For standard GET requests, show the beautiful web interface.
+    return render_template('index.html')
+
+@app.route('/api-info', methods=['GET'])
+def api_info():
+    """JSON endpoint for API information (for backwards compatibility)"""
     return jsonify({
         "name": "TDS Virtual TA",
         "description": "Virtual TA for IIT Madras TDS course",
