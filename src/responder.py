@@ -153,26 +153,61 @@ class VirtualTAResponder:
         
         return scored_results
 
-    def extract_clean_answer(self, content: str) -> str:
-        """Extract a more reliable answer from content."""
+    def extract_clean_answer(self, content: str, question: str) -> str:
+        """
+        Extract a highly relevant and clean answer from content, avoiding meta-text.
+        """
         if not content:
             return "No specific answer found in the provided content."
-        
-        # Prioritize clear, direct sentences
+
+        # **CRITICAL FIX 2: More Aggressive Negative Filtering**
+        # Remove instructional text and web page junk before processing.
+        negative_patterns = [
+            r'copy to clipboard',
+            r'error copied',
+            r'this is a real question',
+            r'the response must be a json object',
+            r'screenshot',
+            r'for example, here\'s how anyone can make a request'
+        ]
+        for pattern in negative_patterns:
+            content = re.sub(pattern, '', content, flags=re.IGNORECASE)
+
         sentences = re.split(r'[.!?]+', content)
         
-        # Look for sentences with keywords like 'must', 'should', 'is', 'are'
-        priority_keywords = ['you must', 'you should', 'the answer is', 'it is recommended', 'use']
-        for sentence in sentences:
-            for priority_kw in priority_keywords:
-                if priority_kw in sentence.lower():
-                    return sentence.strip()
-
-        # Fallback to first meaningful sentence
-        for sentence in sentences:
-            if len(sentence.strip()) > 30: # Avoid very short, unhelpful sentences
-                return sentence.strip()
+        # **CRITICAL FIX 3: Prioritize sentences that contain keywords from the question**
+        question_keywords = set(self.extract_keywords(question))
         
+        best_sentence = ""
+        highest_score = 0
+
+        for sentence in sentences:
+            sentence_clean = sentence.strip()
+            if len(sentence_clean) < 15:  # Ignore very short, likely meaningless sentences
+                continue
+
+            sentence_keywords = set(self.extract_keywords(sentence_clean))
+            common_keywords = question_keywords.intersection(sentence_keywords)
+            
+            # Simple score: number of overlapping keywords
+            score = len(common_keywords)
+            
+            # Boost for direct answer phrases
+            if any(phrase in sentence_clean.lower() for phrase in ['you must use', 'it is recommended', 'the answer is']):
+                score += 5
+
+            if score > highest_score:
+                highest_score = score
+                best_sentence = sentence_clean
+        
+        if best_sentence:
+            return best_sentence
+
+        # Fallback to the original logic if no keyword-matching sentence is found
+        for sentence in sentences:
+            if len(sentence.strip()) > 30:
+                return sentence.strip()
+
         return content[:300] + "..." if len(content) > 300 else content
 
     def generate_response(self, question_data: Dict) -> Dict:
@@ -180,12 +215,12 @@ class VirtualTAResponder:
         original_question = question_data.get('original_question', '')
         relevant_items = self.find_relevant_content(original_question)
         
-        if relevant_items and relevant_items[0]["score"] > 10:  # Use a score threshold
+        if relevant_items and relevant_items[0]["score"] > 10:
             best_item = relevant_items[0]["item"]
             
-            # Use the full content of the best item for answer extraction
             raw_content = best_item.get('content', '') or best_item.get('title', '')
-            answer = self.extract_clean_answer(raw_content)
+            # Pass the original question to the answer extractor for better context
+            answer = self.extract_clean_answer(raw_content, original_question)
             
             links = []
             seen_urls = set()
