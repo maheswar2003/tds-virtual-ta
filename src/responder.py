@@ -21,26 +21,32 @@ class VirtualTAResponder:
         self._load_and_clean_data()
         
     def _radical_clean(self, text: str) -> str:
-        """Aggressively removes junk, code, and meta-text."""
+        """Aggressively removes junk, code, and meta-text. V2."""
         if not text:
             return ""
         # Remove URLs
         text = re.sub(r'https?://\S+', '', text)
-        # Remove anything that looks like code or JSON snippets
+        # Remove code blocks and HTML tags
+        text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
         text = re.sub(r'\{.*?\}', '', text, flags=re.DOTALL)
         text = re.sub(r'<.*?>', '', text, flags=re.DOTALL)
+        # Remove bracketed content like [skip ci]
+        text = re.sub(r'\[.*?\]', '', text, flags=re.DOTALL)
+        
         # Remove UI text and instructions
         negative_patterns = [
             'copy to clipboard', 'error copied', 'this is a real question',
             'the response must be a json object', 'screenshot', 'for example',
             'relevant resource', 'related resources', 'rawcontent', 'statuscode',
-            'like this:', 'must accept a post request', 'out of kindness'
+            'like this:', 'must accept a post request', 'out of kindness',
+            'github cli', 'super-linter', 'release drafter', 'git push', 'exit 0'
         ]
         for pattern in negative_patterns:
             text = re.sub(pattern, '', text, flags=re.IGNORECASE)
-        # Normalize whitespace and remove leftover characters
+            
+        # Normalize whitespace and remove leftover characters that are not part of prose
+        text = text.replace('`', '').replace('"', "'").replace('|', ' ')
         text = re.sub(r'\s+', ' ', text).strip()
-        text = text.replace('`', '').replace('"', '').replace("'", "")
         return text
 
     def _load_and_clean_data(self):
@@ -111,7 +117,7 @@ class VirtualTAResponder:
         return sorted(scored_results, key=lambda x: x['score'], reverse=True)
 
     def extract_final_answer(self, item: Dict, question: str) -> str:
-        """Extracts the best possible sentence as the answer."""
+        """Extracts the best possible sentence as the answer. V2."""
         clean_text = item.get('clean_search_text', '')
         question_keywords = self._get_keywords(question)
 
@@ -121,15 +127,20 @@ class VirtualTAResponder:
 
         for sentence in sentences:
             sentence = sentence.strip()
-            if len(sentence) < 20:
+            # Basic quality checks for a sentence
+            if len(sentence) < 25 or len(sentence) > 400: # Filter out fragments and long paragraphs
                 continue
-            
+            if sentence.count(' ') < 3: # Must have at least a few words
+                continue
+
             sentence_keywords = self._get_keywords(sentence)
             common_keywords = question_keywords.intersection(sentence_keywords)
-            score = len(common_keywords)
             
-            # Boost for sentences that look like direct answers
-            if any(phrase in sentence.lower() for phrase in ['you must', 'you should', 'the answer is', 'it is recommended']):
+            # Score is based on keyword overlap
+            score = len(common_keywords)
+
+            # Boost for direct answer phrases
+            if any(phrase in sentence.lower() for phrase in ['you must', 'you should', 'the answer is', 'it is recommended to']):
                 score += 3
             
             if score > highest_score:
