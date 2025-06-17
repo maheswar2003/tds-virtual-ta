@@ -22,15 +22,15 @@ CORS(app)  # Allow cross-origin requests for evaluation tools
 
 # Import our modules
 try:
-    from src.responder import VirtualTAResponder
-    from src.processor import QuestionProcessor
+    from src.new_processor import SmartQuestionProcessor
+    from src.improved_responder import ImprovedVirtualTAResponder
 except ImportError as e:
     logger.error(f"Failed to import modules: {e}")
     raise
 
-# Initialize components
-processor = QuestionProcessor()
-responder = VirtualTAResponder()
+# Initialize components with final improved system
+processor = SmartQuestionProcessor()
+responder = ImprovedVirtualTAResponder()
 
 @app.route('/api/', methods=['POST'])
 def ask_question():
